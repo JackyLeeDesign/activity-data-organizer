@@ -2,389 +2,459 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>活動資料整理系統</title>
-  <!-- 載入 Bootstrap 以便美化介面 -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>法會申請單更新系統</title>
+  <!-- 載入 Bootstrap 做基本排版 -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
   <style>
-    body { background-color: #f8f9fa; }
-    .step-section {
-      margin-top: 20px;
-      padding: 20px;
-      background-color: #fff;
-      border-radius: 5px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .hidden { display: none; }
+    body { padding-top: 20px; }
+    .card { margin-bottom: 20px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1 class="my-4 text-center">活動資料整理系統</h1>
-    
-    <!-- 重置按鈕 -->
-    <div class="text-end mb-3">
-      <button id="resetButton" class="btn btn-warning">重置</button>
+<div class="container">
+  <h1 class="mb-4">法會申請單更新系統</h1>
+  
+  <!-- Step 1：上傳原始檔案 -->
+  <div class="card">
+    <div class="card-header">
+      Step 1：上傳第一份檔案（原始資料）
     </div>
-    
-    <!-- 步驟 1：上傳原始資料 -->
-    <div id="step1" class="step-section">
-      <h3>步驟 1：上傳原始資料</h3>
-      <input type="file" id="originalFileInput" accept=".xls,.xlsx" class="form-control">
-      <div id="originalFileFeedback" class="mt-2"></div>
+    <div class="card-body">
+      <input type="file" id="fileInput" class="form-control-file" accept=".xlsx,.xls">
+      <small class="form-text text-muted">請上傳 Google 下載的原始申請單檔案</small>
     </div>
-    
-    <!-- 步驟 2：選擇原始資料欄位 -->
-    <div id="step2" class="step-section hidden">
-      <h3>步驟 2：選擇原始資料欄位</h3>
-      <div class="mb-3">
-        <label for="origNameSelect" class="form-label">選擇「姓名」欄位</label>
-        <select id="origNameSelect" class="form-select"></select>
-      </div>
-      <div class="mb-3">
-        <label for="origPhoneSelect" class="form-label">選擇「電話號碼」欄位</label>
-        <select id="origPhoneSelect" class="form-select"></select>
-      </div>
-      <div class="mb-3">
-        <label for="origDateSelect" class="form-label">選擇「填寫日期」欄位</label>
-        <select id="origDateSelect" class="form-select"></select>
-      </div>
-      <button id="confirmOriginalColumns" class="btn btn-primary">確定</button>
-    </div>
-    
-    <!-- 步驟 3：上傳合併資料 -->
-    <div id="step3" class="step-section hidden">
-      <h3>步驟 3：上傳合併資料</h3>
-      <input type="file" id="mergeFileInput" accept=".xls,.xlsx" class="form-control">
-      <div id="mergeFileFeedback" class="mt-2"></div>
-    </div>
-    
-    <!-- 步驟 4：選擇合併資料欄位 -->
-    <div id="step4" class="step-section hidden">
-      <h3>步驟 4：選擇合併資料欄位</h3>
-      <div class="mb-3">
-        <label for="mergeNameSelect" class="form-label">選擇合併資料「姓名」欄位</label>
-        <select id="mergeNameSelect" class="form-select"></select>
-      </div>
-      <div class="mb-3">
-        <label for="mergeFieldsSelect" class="form-label">選擇欲併入欄位 (可複選)</label>
-        <select id="mergeFieldsSelect" class="form-select" multiple></select>
-      </div>
-      <button id="confirmMergeColumns" class="btn btn-primary">確定</button>
-    </div>
-    
-    <!-- 步驟 5：產生並下載結果 -->
-    <div id="step5" class="step-section hidden">
-      <h3>步驟 5：產生並下載結果</h3>
-      <button id="generateButton" class="btn btn-success">產生結果並下載 Excel</button>
-    </div>
-    
   </div>
   
-  <!-- 載入 SheetJS (xlsx) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <!-- 載入 Bootstrap JS（非必要，但可支援部分元件效果） -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Step 2：選擇工作表與 Mapping 欄位 -->
+  <div class="card" id="sheetMappingSection" style="display:none;">
+    <div class="card-header">
+      Step 2：選擇工作表與 Mapping 欄位
+    </div>
+    <div class="card-body">
+      <div class="form-group">
+        <label for="sheetSelect">選擇工作表</label>
+        <select id="sheetSelect" class="form-control"></select>
+      </div>
+      <h5>請選擇下列主要欄位（Mapping）</h5>
+      <div class="form-group">
+        <label for="mapName">姓名</label>
+        <select id="mapName" class="form-control"></select>
+      </div>
+      <div class="form-group">
+        <label for="mapPhone">手機</label>
+        <select id="mapPhone" class="form-control"></select>
+      </div>
+      <div class="form-group">
+        <label for="mapStatus">申請單狀態</label>
+        <select id="mapStatus" class="form-control"></select>
+      </div>
+      <div class="form-group">
+        <label for="mapTimestamp">時間戳記</label>
+        <select id="mapTimestamp" class="form-control"></select>
+      </div>
+      <div class="form-group">
+        <label for="mapNotes">備註</label>
+        <select id="mapNotes" class="form-control"></select>
+      </div>
+      <!-- 新增一個「說明」欄位的 Mapping -->
+      <div class="form-group">
+        <label for="mapDescription">說明</label>
+        <select id="mapDescription" class="form-control"></select>
+      </div>
+
+      <button id="processBtn" class="btn btn-primary">處理檔案</button>
+    </div>
+  </div>
   
-  <script>
-  document.addEventListener("DOMContentLoaded", function() {
-    // 全域變數
-    let originalData = [];
-    let mergeData = [];
-    let origValidColumns = [];
-    let mergeValidColumns = [];
-    let origNameCol = "";
-    let origPhoneCol = "";
-    let origDateCol = "";
-    let mergeNameCol = "";
-    let mergeMergeCols = [];
-    
-    // 取得各區塊 DOM 元素
-    const step1 = document.getElementById("step1");
-    const step2 = document.getElementById("step2");
-    const step3 = document.getElementById("step3");
-    const step4 = document.getElementById("step4");
-    const step5 = document.getElementById("step5");
-    
-    const originalFileInput = document.getElementById("originalFileInput");
-    const mergeFileInput = document.getElementById("mergeFileInput");
-    const originalFileFeedback = document.getElementById("originalFileFeedback");
-    const mergeFileFeedback = document.getElementById("mergeFileFeedback");
-    
-    const origNameSelect = document.getElementById("origNameSelect");
-    const origPhoneSelect = document.getElementById("origPhoneSelect");
-    const origDateSelect = document.getElementById("origDateSelect");
-    const mergeNameSelect = document.getElementById("mergeNameSelect");
-    const mergeFieldsSelect = document.getElementById("mergeFieldsSelect");
-    
-    const confirmOriginalColumns = document.getElementById("confirmOriginalColumns");
-    const confirmMergeColumns = document.getElementById("confirmMergeColumns");
-    const generateButton = document.getElementById("generateButton");
-    const resetButton = document.getElementById("resetButton");
-    
-    // 重新初始化所有全域變數與畫面狀態
-    function resetAll() {
-      originalData = [];
-      mergeData = [];
-      origValidColumns = [];
-      mergeValidColumns = [];
-      origNameCol = "";
-      origPhoneCol = "";
-      origDateCol = "";
-      mergeNameCol = "";
-      mergeMergeCols = [];
-      
-      originalFileInput.value = "";
-      mergeFileInput.value = "";
-      
-      originalFileFeedback.innerHTML = "";
-      mergeFileFeedback.innerHTML = "";
-      
-      origNameSelect.innerHTML = "";
-      origPhoneSelect.innerHTML = "";
-      origDateSelect.innerHTML = "";
-      mergeNameSelect.innerHTML = "";
-      mergeFieldsSelect.innerHTML = "";
-      
-      step2.classList.add("hidden");
-      step3.classList.add("hidden");
-      step4.classList.add("hidden");
-      step5.classList.add("hidden");
-    }
-    
-    // 過濾整列皆空的資料列
-    function filterValidRows(data) {
-      return data.filter(row => {
-        return Object.values(row).some(val => val !== null && val !== undefined && val.toString().trim() !== "");
+  <!-- Step 3：上傳第二份檔案（非必要，代表後續更新） -->
+  <div class="card" id="uploadSecondFileSection">
+    <div class="card-header">
+      上傳第二份申請單（後續資料，可選擇上傳）
+    </div>
+    <div class="card-body">
+      <input type="file" id="fileInputSecond" class="form-control-file" accept=".xlsx,.xls">
+      <small class="form-text text-muted">
+        ※ 若第二份檔案上傳，表示該檔案內含之前處理完筆數之前的資料，後續資料從【處理完筆數+1】開始。<br>
+        ※ 程式將根據第一份檔案更新後的筆數，僅取新資料來更新原始資料。
+      </small>
+    </div>
+  </div>
+</div>
+
+<!-- 載入 SheetJS 與 ExcelJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<script>
+  let globalFirstFileData = null; // array-of-array (含 header)
+  let globalSecondFileData = null;
+  let globalHeader = null;
+  let processedCount = 0; // 處理筆數(不含 header)
+
+  // Step 1：上傳第一份檔案
+  document.getElementById('fileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const data = evt.target.result;
+      const wb = XLSX.read(data, {type: 'binary'});
+      // 填入工作表選單
+      const sheetSelect = document.getElementById('sheetSelect');
+      sheetSelect.innerHTML = "";
+      wb.SheetNames.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        sheetSelect.appendChild(opt);
       });
-    }
-    
-    // 取得有效欄位（至少有一筆資料不為空）
-    function getValidColumns(data) {
-      if(data.length === 0) return [];
-      const allColumns = Object.keys(data[0]);
-      return allColumns.filter(col => {
-        return data.some(row => row[col] !== null && row[col] !== undefined && row[col].toString().trim() !== "");
-      });
-    }
-    
-    // 將選項填入下拉選單
-    function populateSelect(selectElement, options, placeholder = "--請選擇--") {
-      selectElement.innerHTML = "";
-      let opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = placeholder;
-      selectElement.appendChild(opt);
-      options.forEach(option => {
-        let opt = document.createElement("option");
-        opt.value = option;
-        opt.textContent = option;
-        selectElement.appendChild(opt);
-      });
-    }
-    
-    // 處理原始資料上傳
-    originalFileInput.addEventListener("change", function(e) {
-      const file = e.target.files[0];
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const data = evt.target.result;
-        try {
-          const workbook = XLSX.read(data, {type: 'binary'});
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          let jsonData = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
-          jsonData = filterValidRows(jsonData);
-          originalData = jsonData;
-          origValidColumns = getValidColumns(originalData);
-          if(origValidColumns.length === 0) {
-            originalFileFeedback.innerHTML = '<span class="text-danger">無有效資料欄位！</span>';
-            return;
-          }
-          originalFileFeedback.innerHTML = '<span class="text-success">原始資料已上傳且清理完成。</span>';
-          // 產生原始資料欄位選單（姓名、電話、填寫日期）
-          populateSelect(origNameSelect, origValidColumns);
-          populateSelect(origPhoneSelect, origValidColumns);
-          populateSelect(origDateSelect, origValidColumns);
-          step2.classList.remove("hidden");
-        } catch(error) {
-          originalFileFeedback.innerHTML = '<span class="text-danger">檔案讀取錯誤！</span>';
-          console.error(error);
-        }
-      };
-      reader.readAsBinaryString(file);
-    });
-    
-    // 處理合併資料上傳
-    mergeFileInput.addEventListener("change", function(e) {
-      const file = e.target.files[0];
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const data = evt.target.result;
-        try {
-          const workbook = XLSX.read(data, {type: 'binary'});
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          let jsonData = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
-          jsonData = filterValidRows(jsonData);
-          mergeData = jsonData;
-          mergeValidColumns = getValidColumns(mergeData);
-          if(mergeValidColumns.length === 0) {
-            mergeFileFeedback.innerHTML = '<span class="text-danger">無有效資料欄位！</span>';
-            return;
-          }
-          mergeFileFeedback.innerHTML = '<span class="text-success">合併資料已上傳且清理完成。</span>';
-          // 產生合併資料欄位選單：單選「姓名」與多選「欲併入欄位」
-          populateSelect(mergeNameSelect, mergeValidColumns);
-          populateSelect(mergeFieldsSelect, mergeValidColumns);
-          step4.classList.remove("hidden");
-        } catch(error) {
-          mergeFileFeedback.innerHTML = '<span class="text-danger">檔案讀取錯誤！</span>';
-          console.error(error);
-        }
-      };
-      reader.readAsBinaryString(file);
-    });
-    
-    // 原始資料欄位選定後，按下「確定」
-    confirmOriginalColumns.addEventListener("click", function() {
-      const nameCol = origNameSelect.value;
-      const phoneCol = origPhoneSelect.value;
-      const dateCol = origDateSelect.value;
-      if(!nameCol || !phoneCol || !dateCol) {
-        alert("請選擇所有原始資料欄位！");
-        return;
+      sheetSelect.addEventListener('change', loadMappingFields);
+      // 預設使用第一個工作表
+      loadMappingFields();
+      // 讀取完整資料
+      globalFirstFileData = XLSX.utils.sheet_to_json(wb.Sheets[sheetSelect.value], {header:1});
+      if(globalFirstFileData && globalFirstFileData.length>0) {
+        globalHeader = globalFirstFileData[0];
+        processedCount = globalFirstFileData.length - 1;
       }
-      origNameCol = nameCol;
-      origPhoneCol = phoneCol;
-      origDateCol = dateCol;
-      step2.classList.add("hidden");
-      step3.classList.remove("hidden");
-    });
-    
-    // 合併資料欄位選定後，按下「確定」
-    confirmMergeColumns.addEventListener("click", function() {
-      const mNameCol = mergeNameSelect.value;
-      if(!mNameCol) {
-        alert("請選擇合併資料中的姓名欄位！");
-        return;
-      }
-      mergeNameCol = mNameCol;
-      // 取得多選的欄位
-      mergeMergeCols = Array.from(mergeFieldsSelect.selectedOptions).map(opt => opt.value);
-      step4.classList.add("hidden");
-      step5.classList.remove("hidden");
-    });
-    
-    // 若合併資料上傳後，則自動隱藏步驟 3，顯示步驟 4
-    mergeFileInput.addEventListener("change", function() {
-      if(step4.classList.contains("hidden")) return;
-      step3.classList.add("hidden");
-      step4.classList.remove("hidden");
-    });
-    
-    // 產生結果並下載 Excel 檔案
-    generateButton.addEventListener("click", function() {
-      if(originalData.length === 0) {
-        alert("請先上傳原始資料！");
-        return;
-      }
-      const today = new Date();
-      // 各個工作表的資料陣列
-      const sheet_original = originalData; // 原始資料（已清理）
-      const sheet_latestMerged = [];        // 每組最新且併入合併資料的紀錄
-      const sheet_abnormal = [];            // 同一姓名有不同電話的記錄
-      const sheet_latestList = [];          // 僅原始資料每組最新一筆
-      const sheet_noChange = [];            // 只有一筆資料的組
-      const sheet_recent1 = [];             // 更新紀錄中填寫日期與今天差距 ≤ 1 天
-      const sheet_recent2 = [];             // 更新紀錄中填寫日期與今天差距 = 2 天
-      const sheet_history = [];             // 所有更新紀錄（第二筆以後）
-      
-      // 依「姓名」分組
-      const groups = {};
-      originalData.forEach(record => {
-        const name = record[origNameCol];
-        if(!groups[name]) { groups[name] = []; }
-        groups[name].push(record);
-      });
-      
-      // 處理每個分組
-      for(let name in groups) {
-        const records = groups[name];
-        // 檢查同一姓名是否有多個電話號碼
-        const phoneSet = new Set(records.map(r => r[origPhoneCol]));
-        if(phoneSet.size > 1) {
-          sheet_abnormal.push(...records);
-        } else {
-          // 按填寫日期降冪排序
-          records.sort((a, b) => new Date(b[origDateCol]) - new Date(a[origDateCol]));
-          const latestRecord = records[0];
-          // 複製一份作為併入合併資料用
-          let mergedRecord = Object.assign({}, latestRecord);
-          if(mergeData.length > 0) {
-            // 根據合併資料中的姓名欄位比對
-            const match = mergeData.find(r => r[mergeNameCol] == name);
-            if(match) {
-              mergeMergeCols.forEach(col => {
-                let newColName = col;
-                // 若原始資料已有相同欄位名稱，則加上「_合併資料」後綴
-                if(latestRecord.hasOwnProperty(col)) {
-                  newColName = col + "_合併資料";
-                }
-                mergedRecord[newColName] = match[col];
-              });
-            }
-          }
-          sheet_latestMerged.push(mergedRecord);
-          sheet_latestList.push(latestRecord);
-          if(records.length === 1) {
-            sheet_noChange.push(latestRecord);
-          } else {
-            // 處理更新紀錄（除最新外的其他筆）
-            for(let i = 1; i < records.length; i++) {
-              const rec = records[i];
-              const recDate = new Date(rec[origDateCol]);
-              const diffDays = Math.floor((today - recDate) / (1000 * 60 * 60 * 24));
-              sheet_history.push(rec);
-              if(diffDays <= 1) { sheet_recent1.push(rec); }
-              if(diffDays === 2) { sheet_recent2.push(rec); }
-            }
-          }
-        }
-      }
-      
-      // 產生含多個 Sheet 的 Excel 檔
-      const wb = XLSX.utils.book_new();
-      function addSheet(data, sheetName) {
-        const ws = XLSX.utils.json_to_sheet(data);
-        XLSX.utils.book_append_sheet(wb, ws, sheetName);
-      }
-      
-      addSheet(sheet_original, "原資料");
-      addSheet(sheet_latestMerged, "最新資料(含合併資料)");
-      addSheet(sheet_abnormal, "異常資料");
-      addSheet(sheet_latestList, "最新清單");
-      addSheet(sheet_noChange, "無異動資料");
-      addSheet(sheet_recent1, "近一日異動資料");
-      addSheet(sheet_recent2, "近兩日異動資料");
-      addSheet(sheet_history, "歷史異動資料");
-      
-      // 觸發下載
-      XLSX.writeFile(wb, "result.xlsx");
-    });
-    
-    // 重置按鈕
-    resetButton.addEventListener("click", function() {
-      if(confirm("是否確定重置所有資料？")) {
-        resetAll();
-      }
-    });
-    
-    // 初始化
-    resetAll();
+      document.getElementById('sheetMappingSection').style.display = 'block';
+    };
+    reader.readAsBinaryString(file);
   });
-  </script>
+  
+  function loadMappingFields() {
+    if(!globalFirstFileData) {
+      setTimeout(loadMappingFields, 1000);
+      return;
+    };
+    const headers = globalFirstFileData[0];
+    // 依序給既有和新欄位的select加上 option
+    ['mapName','mapPhone','mapStatus','mapTimestamp','mapNotes','mapDescription'].forEach(id => {
+      const select = document.getElementById(id);
+      select.innerHTML = "";
+      headers.forEach((header, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = header;
+        select.appendChild(opt);
+      });
+    });
+  }
+  
+  // Step 2：上傳第二份檔案
+  document.getElementById('fileInputSecond').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const data = evt.target.result;
+      const wb = XLSX.read(data, {type: 'binary'});
+      globalSecondFileData = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1});
+    };
+    reader.readAsBinaryString(file);
+  });
+  
+  // 「處理檔案」按鈕
+  document.getElementById('processBtn').addEventListener('click', async function() {
+    if(!globalFirstFileData){
+      alert("請先上傳第一份檔案");
+      return;
+    }
+    // 新增 mapDescription
+    const map = {
+      name: parseInt(document.getElementById('mapName').value),
+      phone: parseInt(document.getElementById('mapPhone').value),
+      status: parseInt(document.getElementById('mapStatus').value),
+      timestamp: parseInt(document.getElementById('mapTimestamp').value),
+      notes: parseInt(document.getElementById('mapNotes').value),
+      desc: parseInt(document.getElementById('mapDescription').value) // 「說明」欄位
+    };
+    
+    // 先處理第一份資料
+    let firstRows = [];
+    for(let i=1; i<globalFirstFileData.length; i++){
+      let rowObj = arrayToObject(globalFirstFileData[i], globalHeader);
+      rowObj.__source = 'first';
+      firstRows.push(rowObj);
+    }
+
+    // 將第一份資料的手機進行整理，去除非數字字元
+    firstRows.forEach(row => {
+      const phoneCol = globalHeader[map.phone];
+      if(row[phoneCol]){
+        row[phoneCol] = row[phoneCol].toString().replace(/\D/g, "");
+      }
+    });
+
+    //將姓名的全形半形空白去除
+    firstRows.forEach(row => {
+      const nameCol = globalHeader[map.name];
+      if(row[nameCol]){
+        row[nameCol] = row[nameCol].toString().replace(/[\s　]/g, "");
+      }
+    });
+    
+    // 再處理第二份資料（只取 processedCount 後的新資料）
+    let secondRows = [];
+    if(globalSecondFileData && globalSecondFileData.length>1){
+      if(globalSecondFileData.length - 1 > processedCount){
+        for(let i=processedCount+1; i<globalSecondFileData.length; i++){
+          let rowObj = arrayToObject(globalSecondFileData[i], globalHeader);
+          rowObj.__source = 'second';
+          secondRows.push(rowObj);
+        }
+        processedCount = globalSecondFileData.length - 1;
+      }
+    }
+
+    // 將第二份資料的手機進行整理，去除非數字字元
+    secondRows.forEach(row => {
+      const phoneCol = globalHeader[map.phone];
+      if(row[phoneCol]){
+        row[phoneCol] = row[phoneCol].toString().replace(/\D/g, "");
+      }
+    });
+
+    //將姓名的全形半形空白去除
+    secondRows.forEach(row => {
+      const nameCol = globalHeader[map.name];
+      if(row[nameCol]){
+        row[nameCol] = row[nameCol].toString().replace(/[\s　]/g, "");
+      }
+    });
+    
+    // 合併
+    let allRows = firstRows.concat(secondRows);
+    
+    // 取得欄位名稱
+    const nameCol = globalHeader[map.name];
+    const phoneCol = globalHeader[map.phone];
+    const statusCol = globalHeader[map.status];
+    const timestampCol = globalHeader[map.timestamp];
+    const notesCol = globalHeader[map.notes];
+    const descCol = globalHeader[map.desc];  // 「說明」欄位名稱
+    
+    // 以「姓名＋手機」分組
+    let groups = {};
+    allRows.forEach(row => {
+      const nm = row[nameCol]? row[nameCol].toString().trim() : "";
+      const ph = row[phoneCol]? row[phoneCol].toString().trim() : "";
+      if(!nm || !ph) return;
+      const key = nm + "_" + ph;
+      if(!groups[key]) groups[key] = [];
+      groups[key].push(row);
+    });
+    
+    // 開始合併
+    let activeRecords = [];    
+    let cancelledRecords = [];
+    for(let key in groups){
+      let records = groups[key];
+      // 依 timestamp 由舊到新
+      records.sort((a, b) => new Date(a[timestampCol]) - new Date(b[timestampCol]));
+      
+      // 判斷是否新新增
+      let isNewGroup = !records.some(r => r.__source==='first');
+      // 以第一筆為 base
+      let baseRecord = {...records[0]};
+      let compareRecord = {...baseRecord};
+      let finalRecord = {...baseRecord};
+      
+      let updateFlags = {};
+      globalHeader.forEach(c => { updateFlags[c] = false; });
+      
+      // 從第2筆開始更新
+      for(let i=1; i<records.length; i++){
+        let r = records[i];
+        globalHeader.forEach(col => {
+          if(r[col]!==undefined && r[col]!==""){
+            // 若是備註欄位 或 說明欄位，採用「append」
+            if(col === notesCol || col === descCol){
+              finalRecord[col] = finalRecord[col]
+                ? finalRecord[col] + " " + r[col]  // 用空白連接，也可用換行 "\n"
+                : r[col];
+            } else {
+              // 其他欄位直接覆蓋
+              finalRecord[col] = r[col];
+            }
+          }
+        });
+      }
+      
+      // 比對
+      globalHeader.forEach(col => {
+        if(compareRecord[col] !== finalRecord[col]) {
+          updateFlags[col] = true;
+        }
+      });
+      
+      // 若狀態含「取消」
+      if(finalRecord[statusCol] && finalRecord[statusCol].toString().includes("取消")){
+        finalRecord[statusCol] = "取消" + (finalRecord[nameCol]||"") + (finalRecord[phoneCol]||"");
+        cancelledRecords.push({data: finalRecord, update:updateFlags, isNew:isNewGroup});
+      } else {
+        activeRecords.push({data: finalRecord, update:updateFlags, isNew:isNewGroup});
+      }
+    }
+
+    // 手機號碼或姓名為空值 => 異常
+    let exceptions = [];
+    allRows.forEach(row => {
+      if(!row[nameCol] || !row[phoneCol]){
+        exceptions.push(row);
+      }
+    });
+    
+    // 同一姓名對應多手機 => 異常
+    let nameToPhones = {};
+    let combined = activeRecords.concat(cancelledRecords);
+    combined.forEach(obj => {
+      let nm = obj.data[nameCol]? obj.data[nameCol].toString().trim():"";
+      let ph = obj.data[phoneCol]? obj.data[phoneCol].toString().trim():"";
+      if(!nameToPhones[nm]) nameToPhones[nm] = new Set();
+      nameToPhones[nm].add(ph);
+    });
+    for(let nm in nameToPhones){
+      if(nameToPhones[nm].size>1){
+        combined.forEach(obj => {
+          if(obj.data[nameCol] && obj.data[nameCol].toString().trim()===nm){
+            exceptions.push(obj.data);
+          }
+        });
+      }
+    }
+    
+    await generateOutputExcel(activeRecords, cancelledRecords, exceptions, processedCount, globalHeader);
+  });
+  
+  // array -> object
+  function arrayToObject(arr, headers){
+    let obj = {};
+    headers.forEach((col, idx) => {
+      obj[col] = arr[idx] !== undefined ? arr[idx] : "";
+    });
+    return obj;
+  }
+  
+  // 嘗試 parse Excel 序號或一般日期字串
+  // Excel 1900基準 => (val - 25569)*86400*1000
+  function parseExcelOrDate(val){
+    if(typeof val === "number"){
+      if(val >= 20000){
+        let d = new Date((val - 25569)*86400*1000);
+        if(!isNaN(d.getTime())) return d;
+      }
+      return null;
+    } else {
+      let d = new Date(val);
+      if(!isNaN(d.getTime())){
+        return d;
+      }
+      return null;
+    }
+  }
+  
+  // 產出 Excel
+  async function generateOutputExcel(activeRecords, cancelledRecords, exceptions, finalProcessedCount, headers) {
+    const workbookOut = new ExcelJS.Workbook();
+    
+    // Sheet 1：結果
+    const resultSheet = workbookOut.addWorksheet('結果');
+    let headerRow = resultSheet.addRow(headers);
+    headerRow.eachCell(cell => {
+      cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFCCCCCC'}};
+      cell.font = {bold:true, color:{argb:'FF000000'}};
+    });
+    activeRecords.forEach(obj => {
+      const rowData = headers.map(col => obj.data[col]);
+      let row = resultSheet.addRow(rowData);
+      // 新新增 => 淡藍
+      if(obj.isNew){
+        row.eachCell(cell => {
+          cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFCCE5FF'}};
+        });
+      } else {
+        // 已存在 => 只對有異動的欄位標黃
+        row.eachCell((cell, colNum) => {
+          let colName = headers[colNum-1];
+          if(obj.update[colName]){
+            cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFFFFF99'}};
+          }
+        });
+      }
+      // 嘗試把所有欄位 parse 成日期
+      row.eachCell((cell, colNum) => {
+        const parsed = parseExcelOrDate(cell.value);
+        if(parsed){
+          cell.value = parsed;
+          cell.numFmt = 'yyyy/mm/dd';
+        }
+      });
+    });
+    
+    // Sheet 2：取消
+    const cancelSheet = workbookOut.addWorksheet('取消');
+    let cancelHeader = cancelSheet.addRow(headers);
+    cancelHeader.eachCell(cell => {
+      cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFCCCCCC'}};
+      cell.font = {bold:true, color:{argb:'FF000000'}};
+    });
+    cancelledRecords.forEach(obj => {
+      const rowData = headers.map(col => obj.data[col]);
+      let row = cancelSheet.addRow(rowData);
+      // 同樣嘗試 parse
+      row.eachCell((cell, colNum) => {
+        const parsed = parseExcelOrDate(cell.value);
+        if(parsed){
+          cell.value = parsed;
+          cell.numFmt = 'yyyy/mm/dd';
+        }
+      });
+    });
+    
+    // Sheet 3：異常
+    const excSheet = workbookOut.addWorksheet('異常');
+    let excHeaderRow = excSheet.addRow(headers);
+    excHeaderRow.eachCell(cell => {
+      cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFCCCCCC'}};
+      cell.font = {bold:true, color:{argb:'FF000000'}};
+    });
+    exceptions.forEach(item => {
+      let rowData = headers.map(col => item[col]);
+      let row = excSheet.addRow(rowData);
+      // 同樣嘗試 parse
+      row.eachCell((cell, colNum) => {
+        const parsed = parseExcelOrDate(cell.value);
+        if(parsed){
+          cell.value = parsed;
+          cell.numFmt = 'yyyy/mm/dd';
+        }
+      });
+    });
+    
+    // Sheet 4：當前處理完筆數
+    const countSheet = workbookOut.addWorksheet('當前處理完筆數');
+    countSheet.addRow(["筆數", finalProcessedCount]);
+    
+    // 組出檔名 (例如: 結果檔_20250221_1530.xlsx)
+    const now = new Date();
+    const year = now.getFullYear();
+    const mon = String(now.getMonth()+1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const fileName = `結果檔_${year}${mon}${day}_${hh}${mm}.xlsx`;
+    
+    // 觸發下載
+    const buf = await workbookOut.xlsx.writeBuffer();
+    const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+</script>
 </body>
 </html>
