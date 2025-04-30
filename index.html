@@ -179,6 +179,29 @@
       desc: parseInt(document.getElementById('mapDescription').value), // 「說明」欄位
       returnMedicine: parseInt(document.getElementById('returnMedicine').value) // 回程藥石欄位
     };
+
+    // 讀取名為"設定檔"之頁籤，自動填妥下拉選單
+    const settingSheet = globalFirstFileData.find(sheet => sheet[0] === '設定檔');
+    if(settingSheet && settingSheet.length > 1){
+      const nameCol = settingSheet[1][0]; // 法名欄位名稱
+      const mainNameCol = settingSheet[2][0]; // 姓名欄位名稱
+      const phoneCol = settingSheet[3][0]; // 手機欄位名稱
+      const statusCol = settingSheet[4][0]; // 申請單狀態欄位名稱
+      const timestampCol = settingSheet[5][0]; // 時間戳記欄位名稱
+      const notesCol = settingSheet[6][0]; // 備註欄位名稱
+      const descCol = settingSheet[7][0]; // 說明欄位名稱
+      const returnMedicineCol = settingSheet[8][0]; // 回程藥石欄位名稱
+
+      document.getElementById('mainName').value = nameCol;
+      document.getElementById('mapName').value = mainNameCol;
+      document.getElementById('mapPhone').value = phoneCol;
+      document.getElementById('mapStatus').value = statusCol;
+      document.getElementById('mapTimestamp').value = timestampCol;
+      document.getElementById('mapNotes').value = notesCol;
+      document.getElementById('mapDescription').value = descCol; // 新增的說明欄位
+      document.getElementById('returnMedicine').value = returnMedicineCol; // 新增的回程藥石欄位
+    }
+    
     
     // 先處理第一份資料
     let firstRows = [];
@@ -443,6 +466,41 @@
         }
       });
     });
+
+    // 根據回程藥石那欄，產生一個人數統計表
+    const returnMedicineCount = {};
+    activeRecords.forEach(obj => {
+      const returnMedicine = obj.data[returnMedicineCol] || "無";
+      if(!returnMedicineCount[returnMedicine]) returnMedicineCount[returnMedicine] = 0;
+      returnMedicineCount[returnMedicine]++;
+    });
+    const returnMedicineSheet = workbookOut.addWorksheet('回程藥石統計');
+    // 根據填寫的內容去計算總人數與各選項的人數
+    let returnMedicineHeader = returnMedicineSheet.addRow(['回程藥石', '人數']);
+    returnMedicineHeader.eachCell(cell => {
+      cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFCCCCCC'}};
+      cell.font = {bold:true, color:{argb:'FF000000'}};
+    });
+    Object.keys(returnMedicineCount).forEach(key => {
+      const count = returnMedicineCount[key];
+      const row = returnMedicineSheet.addRow([key, count]);
+      row.eachCell((cell, colNum) => {
+        cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFCCE5FF'}};
+      });
+    });
+
+    // 根據前面所選的匹配欄位，產生一個設定檔頁籤
+    const settingSheet = workbookOut.addWorksheet('設定檔');
+    settingSheet.addRow(['欄位名稱', '對應欄位']);
+    settingSheet.addRow(['法名', globalHeader[map.mainname]]);
+    settingSheet.addRow(['姓名', globalHeader[map.name]]);
+    settingSheet.addRow(['手機', globalHeader[map.phone]]);
+    settingSheet.addRow(['申請單狀態', globalHeader[map.status]]);
+    settingSheet.addRow(['時間戳記', globalHeader[map.timestamp]]);
+    settingSheet.addRow(['備註', globalHeader[map.notes]]);
+    settingSheet.addRow(['說明', globalHeader[map.desc]]); // 新增的說明欄位
+    settingSheet.addRow(['回程藥石', globalHeader[map.returnMedicine]]); // 新增的回程藥石欄位
+
     
     // Sheet 4：當前處理完筆數
     const countSheet = workbookOut.addWorksheet('當前處理完筆數');
