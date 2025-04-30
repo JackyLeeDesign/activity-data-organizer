@@ -37,13 +37,17 @@
       </div>
       <h5>請選擇下列主要欄位（Mapping）</h5>
       <div class="form-group">
+        <label for="mainName">法名</label>
+        <select id="mainName" class="form-control"></select>
+      </div>
+      <div class="form-group">
         <label for="mapName">姓名</label>
         <select id="mapName" class="form-control"></select>
       </div>
-      <div class="form-group">
+      <!-- <div class="form-group">
         <label for="mapPhone">手機</label>
         <select id="mapPhone" class="form-control"></select>
-      </div>
+      </div> -->
       <div class="form-group">
         <label for="mapStatus">申請單狀態</label>
         <select id="mapStatus" class="form-control"></select>
@@ -51,6 +55,11 @@
       <div class="form-group">
         <label for="mapTimestamp">時間戳記</label>
         <select id="mapTimestamp" class="form-control"></select>
+      </div>
+      <!-- 回程藥石 -->
+      <div class="form-group">
+        <label for="returnMedicine">回程藥石</label>
+        <select id="returnMedicine" class="form-control"></select>
       </div>
       <div class="form-group">
         <label for="mapNotes">備註</label>
@@ -128,7 +137,7 @@
     };
     const headers = globalFirstFileData[0];
     // 依序給既有和新欄位的select加上 option
-    ['mapName','mapPhone','mapStatus','mapTimestamp','mapNotes','mapDescription'].forEach(id => {
+    ['mapName','mainName','mapPhone','mapStatus','mapTimestamp','mapNotes','mapDescription'].forEach(id => {
       const select = document.getElementById(id);
       select.innerHTML = "";
       headers.forEach((header, idx) => {
@@ -162,11 +171,13 @@
     // 新增 mapDescription
     const map = {
       name: parseInt(document.getElementById('mapName').value),
+      mainname: parseInt(document.getElementById('mainName').value),
       phone: parseInt(document.getElementById('mapPhone').value),
       status: parseInt(document.getElementById('mapStatus').value),
       timestamp: parseInt(document.getElementById('mapTimestamp').value),
       notes: parseInt(document.getElementById('mapNotes').value),
-      desc: parseInt(document.getElementById('mapDescription').value) // 「說明」欄位
+      desc: parseInt(document.getElementById('mapDescription').value), // 「說明」欄位
+      returnMedicine: parseInt(document.getElementById('returnMedicine').value) // 回程藥石欄位
     };
     
     // 先處理第一份資料
@@ -227,17 +238,19 @@
     
     // 取得欄位名稱
     const nameCol = globalHeader[map.name];
+    const mainNameCol = globalHeader[map.mainname]; // 法名欄位名稱
     const phoneCol = globalHeader[map.phone];
     const statusCol = globalHeader[map.status];
     const timestampCol = globalHeader[map.timestamp];
     const notesCol = globalHeader[map.notes];
     const descCol = globalHeader[map.desc];  // 「說明」欄位名稱
+    const returnMedicineCol = globalHeader[map.returnMedicine]; // 回程藥石欄位名稱
     
-    // 以「姓名＋手機」分組
+    // 以「姓名＋法名」分組
     let groups = {};
     allRows.forEach(row => {
       const nm = row[nameCol]? row[nameCol].toString().trim() : "";
-      const ph = row[phoneCol]? row[phoneCol].toString().trim() : "";
+      const ma = row[mainNameCol]? row[mainNameCol].toString().trim() : "";
       if(!nm || !ph) return;
       const key = nm + "_" + ph;
       if(!groups[key]) groups[key] = [];
@@ -288,33 +301,33 @@
       });
       
       // 若狀態含「取消」
-      if(finalRecord[statusCol] && finalRecord[statusCol].toString().includes("取消")){
-        finalRecord[statusCol] = "取消" + (finalRecord[nameCol]||"") + (finalRecord[phoneCol]||"");
+      if(finalRecord[statusCol] && finalRecord[statusCol].toString().includes("取消報名")){
+        finalRecord[statusCol] = "取消報名" + (finalRecord[nameCol]||"") + (finalRecord[phoneCol]||"");
         cancelledRecords.push({data: finalRecord, update:updateFlags, isNew:isNewGroup});
       } else {
         activeRecords.push({data: finalRecord, update:updateFlags, isNew:isNewGroup});
       }
     }
 
-    // 手機號碼或姓名為空值 => 異常
+    // 法名或姓名為空值 => 異常
     let exceptions = [];
     allRows.forEach(row => {
-      if(!row[nameCol] || !row[phoneCol]){
+      if(!row[nameCol] || !row[mainNameCol]){
         exceptions.push(row);
       }
     });
     
-    // 同一姓名對應多手機 => 異常
-    let nameToPhones = {};
+    // 同一法名對應多姓名 => 異常
+    let nameToMainName = {};
     let combined = activeRecords.concat(cancelledRecords);
     combined.forEach(obj => {
       let nm = obj.data[nameCol]? obj.data[nameCol].toString().trim():"";
-      let ph = obj.data[phoneCol]? obj.data[phoneCol].toString().trim():"";
-      if(!nameToPhones[nm]) nameToPhones[nm] = new Set();
-      nameToPhones[nm].add(ph);
+      let ma = obj.data[mainNameCol]? obj.data[mainNameCol].toString().trim():"";
+      if(!nameToMainName[nm]) nameToMainName[nm] = new Set();
+      nameToMainName[nm].add(ma);
     });
-    for(let nm in nameToPhones){
-      if(nameToPhones[nm].size>1){
+    for(let nm in nameToMainName){
+      if(nameToMainName[nm].size>1){
         combined.forEach(obj => {
           if(obj.data[nameCol] && obj.data[nameCol].toString().trim()===nm){
             exceptions.push(obj.data);
@@ -391,8 +404,8 @@
       });
     });
     
-    // Sheet 2：取消
-    const cancelSheet = workbookOut.addWorksheet('取消');
+    // Sheet 2：取消報名
+    const cancelSheet = workbookOut.addWorksheet('取消報名');
     let cancelHeader = cancelSheet.addRow(headers);
     cancelHeader.eachCell(cell => {
       cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFCCCCCC'}};
