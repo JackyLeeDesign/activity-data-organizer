@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>法會申請單更新系統</title>
+  <title>申請單更新系統</title>
   <!-- 載入 Bootstrap 做基本排版 -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
   <style>
@@ -12,7 +12,7 @@
 </head>
 <body>
 <div class="container">
-  <h1 class="mb-4">法會申請單更新系統</h1>
+  <h1 class="mb-4">申請單整理</h1>
   
   <!-- Step 1：上傳原始檔案 -->
   <div class="card">
@@ -62,13 +62,8 @@
         <select id="returnMedicine" class="form-control"></select>
       </div>
       <div class="form-group">
-        <label for="mapNotes">備註</label>
+        <label for="mapNotes">備註說明</label>
         <select id="mapNotes" class="form-control"></select>
-      </div>
-      <!-- 新增一個「說明」欄位的 Mapping -->
-      <div class="form-group">
-        <label for="mapDescription">說明</label>
-        <select id="mapDescription" class="form-control"></select>
       </div>
 
       <button id="processBtn" class="btn btn-primary">處理檔案</button>
@@ -109,6 +104,7 @@
       const wb = XLSX.read(data, {type: 'binary'});
       // 填入工作表選單
       const sheetSelect = document.getElementById('sheetSelect');
+      // 清空選單
       sheetSelect.innerHTML = "";
       wb.SheetNames.forEach(name => {
         const opt = document.createElement('option');
@@ -137,7 +133,7 @@
     };
     const headers = globalFirstFileData[0];
     // 依序給既有和新欄位的select加上 option
-    ['mapName','mainName','mapPhone','mapStatus','mapTimestamp','mapNotes','mapDescription'].forEach(id => {
+    ['mapName','mainName','mapStatus','mapTimestamp','mapNotes','returnMedicine'].forEach(id => {
       const select = document.getElementById(id);
       select.innerHTML = "";
       headers.forEach((header, idx) => {
@@ -168,15 +164,12 @@
       alert("請先上傳第一份檔案");
       return;
     }
-    // 新增 mapDescription
     const map = {
       name: parseInt(document.getElementById('mapName').value),
       mainname: parseInt(document.getElementById('mainName').value),
-      phone: parseInt(document.getElementById('mapPhone').value),
       status: parseInt(document.getElementById('mapStatus').value),
       timestamp: parseInt(document.getElementById('mapTimestamp').value),
       notes: parseInt(document.getElementById('mapNotes').value),
-      desc: parseInt(document.getElementById('mapDescription').value), // 「說明」欄位
       returnMedicine: parseInt(document.getElementById('returnMedicine').value) // 回程藥石欄位
     };
 
@@ -185,20 +178,16 @@
     if(settingSheet && settingSheet.length > 1){
       const nameCol = settingSheet[1][0]; // 法名欄位名稱
       const mainNameCol = settingSheet[2][0]; // 姓名欄位名稱
-      const phoneCol = settingSheet[3][0]; // 手機欄位名稱
-      const statusCol = settingSheet[4][0]; // 申請單狀態欄位名稱
-      const timestampCol = settingSheet[5][0]; // 時間戳記欄位名稱
-      const notesCol = settingSheet[6][0]; // 備註欄位名稱
-      const descCol = settingSheet[7][0]; // 說明欄位名稱
-      const returnMedicineCol = settingSheet[8][0]; // 回程藥石欄位名稱
+      const statusCol = settingSheet[3][0]; // 申請單狀態欄位名稱
+      const timestampCol = settingSheet[4][0]; // 時間戳記欄位名稱
+      const notesCol = settingSheet[5][0]; // 備註欄位名稱
+      const returnMedicineCol = settingSheet[6][0]; // 回程藥石欄位名稱
 
       document.getElementById('mainName').value = nameCol;
       document.getElementById('mapName').value = mainNameCol;
-      document.getElementById('mapPhone').value = phoneCol;
       document.getElementById('mapStatus').value = statusCol;
       document.getElementById('mapTimestamp').value = timestampCol;
       document.getElementById('mapNotes').value = notesCol;
-      document.getElementById('mapDescription').value = descCol; // 新增的說明欄位
       document.getElementById('returnMedicine').value = returnMedicineCol; // 新增的回程藥石欄位
     }
     
@@ -240,14 +229,6 @@
       }
     }
 
-    // 將第二份資料的手機進行整理，去除非數字字元
-    secondRows.forEach(row => {
-      const phoneCol = globalHeader[map.phone];
-      if(row[phoneCol]){
-        row[phoneCol] = row[phoneCol].toString().replace(/\D/g, "");
-      }
-    });
-
     //將姓名的全形半形空白去除
     secondRows.forEach(row => {
       const nameCol = globalHeader[map.name];
@@ -262,11 +243,9 @@
     // 取得欄位名稱
     const nameCol = globalHeader[map.name];
     const mainNameCol = globalHeader[map.mainname]; // 法名欄位名稱
-    const phoneCol = globalHeader[map.phone];
     const statusCol = globalHeader[map.status];
     const timestampCol = globalHeader[map.timestamp];
     const notesCol = globalHeader[map.notes];
-    const descCol = globalHeader[map.desc];  // 「說明」欄位名稱
     const returnMedicineCol = globalHeader[map.returnMedicine]; // 回程藥石欄位名稱
     
     // 以「姓名＋法名」分組
@@ -274,8 +253,8 @@
     allRows.forEach(row => {
       const nm = row[nameCol]? row[nameCol].toString().trim() : "";
       const ma = row[mainNameCol]? row[mainNameCol].toString().trim() : "";
-      if(!nm || !ph) return;
-      const key = nm + "_" + ph;
+      if(!nm || !ma) return;
+      const key = nm + "_" + ma;
       if(!groups[key]) groups[key] = [];
       groups[key].push(row);
     });
@@ -303,8 +282,8 @@
         let r = records[i];
         globalHeader.forEach(col => {
           if(r[col]!==undefined && r[col]!==""){
-            // 若是備註欄位 或 說明欄位，採用「append」
-            if(col === notesCol || col === descCol){
+            // 若是備註說明欄位，採用「append」
+            if(col === notesCol){
               finalRecord[col] = finalRecord[col]
                 ? finalRecord[col] + " " + r[col]  // 用空白連接，也可用換行 "\n"
                 : r[col];
@@ -392,6 +371,21 @@
   // 產出 Excel
   async function generateOutputExcel(activeRecords, cancelledRecords, exceptions, finalProcessedCount, headers) {
     const workbookOut = new ExcelJS.Workbook();
+    const map = {
+      name: parseInt(document.getElementById('mapName').value),
+      mainname: parseInt(document.getElementById('mainName').value),
+      status: parseInt(document.getElementById('mapStatus').value),
+      timestamp: parseInt(document.getElementById('mapTimestamp').value),
+      notes: parseInt(document.getElementById('mapNotes').value),
+      returnMedicine: parseInt(document.getElementById('returnMedicine').value) // 回程藥石欄位
+    };
+    // 取得欄位名稱
+    const nameCol = globalHeader[map.name];
+    const mainNameCol = globalHeader[map.mainname]; // 法名欄位名稱
+    const statusCol = globalHeader[map.status];
+    const timestampCol = globalHeader[map.timestamp];
+    const notesCol = globalHeader[map.notes];
+    const returnMedicineCol = globalHeader[map.returnMedicine]; // 回程藥石欄位名稱
     
     // Sheet 1：結果
     const resultSheet = workbookOut.addWorksheet('結果');
@@ -494,11 +488,9 @@
     settingSheet.addRow(['欄位名稱', '對應欄位']);
     settingSheet.addRow(['法名', globalHeader[map.mainname]]);
     settingSheet.addRow(['姓名', globalHeader[map.name]]);
-    settingSheet.addRow(['手機', globalHeader[map.phone]]);
     settingSheet.addRow(['申請單狀態', globalHeader[map.status]]);
     settingSheet.addRow(['時間戳記', globalHeader[map.timestamp]]);
-    settingSheet.addRow(['備註', globalHeader[map.notes]]);
-    settingSheet.addRow(['說明', globalHeader[map.desc]]); // 新增的說明欄位
+    settingSheet.addRow(['備註說明', globalHeader[map.notes]]);
     settingSheet.addRow(['回程藥石', globalHeader[map.returnMedicine]]); // 新增的回程藥石欄位
 
     
