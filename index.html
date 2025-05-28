@@ -44,10 +44,6 @@
         <label for="mapName">姓名</label>
         <select id="mapName" class="form-control"></select>
       </div>
-      <!-- <div class="form-group">
-        <label for="mapPhone">手機</label>
-        <select id="mapPhone" class="form-control"></select>
-      </div> -->
       <div class="form-group">
         <label for="mapStatus">申請單狀態</label>
         <select id="mapStatus" class="form-control"></select>
@@ -56,7 +52,6 @@
         <label for="mapTimestamp">時間戳記</label>
         <select id="mapTimestamp" class="form-control"></select>
       </div>
-      <!-- 回程藥石 -->
       <div class="form-group">
         <label for="returnMedicine">回程藥石</label>
         <select id="returnMedicine" class="form-control"></select>
@@ -191,7 +186,6 @@
       document.getElementById('returnMedicine').value = returnMedicineCol; // 新增的回程藥石欄位
     }
     
-    
     // 先處理第一份資料
     let firstRows = [];
     for(let i=1; i<globalFirstFileData.length; i++){
@@ -199,14 +193,6 @@
       rowObj.__source = 'first';
       firstRows.push(rowObj);
     }
-
-    // 將第一份資料的手機進行整理，去除非數字字元
-    firstRows.forEach(row => {
-      const phoneCol = globalHeader[map.phone];
-      if(row[phoneCol]){
-        row[phoneCol] = row[phoneCol].toString().replace(/\D/g, "");
-      }
-    });
 
     //將姓名的全形半形空白去除
     firstRows.forEach(row => {
@@ -304,7 +290,7 @@
       
       // 若狀態含「取消」
       if(finalRecord[statusCol] && finalRecord[statusCol].toString().includes("取消報名")){
-        finalRecord[statusCol] = "取消報名" + (finalRecord[nameCol]||"") + (finalRecord[phoneCol]||"");
+        finalRecord[statusCol] = "取消報名" + (finalRecord[nameCol]||"");
         cancelledRecords.push({data: finalRecord, update:updateFlags, isNew:isNewGroup});
       } else {
         activeRecords.push({data: finalRecord, update:updateFlags, isNew:isNewGroup});
@@ -377,15 +363,15 @@
       status: parseInt(document.getElementById('mapStatus').value),
       timestamp: parseInt(document.getElementById('mapTimestamp').value),
       notes: parseInt(document.getElementById('mapNotes').value),
-      returnMedicine: parseInt(document.getElementById('returnMedicine').value) // 回程藥石欄位
+      returnMedicine: parseInt(document.getElementById('returnMedicine').value)
     };
     // 取得欄位名稱
     const nameCol = globalHeader[map.name];
-    const mainNameCol = globalHeader[map.mainname]; // 法名欄位名稱
+    const mainNameCol = globalHeader[map.mainname];
     const statusCol = globalHeader[map.status];
     const timestampCol = globalHeader[map.timestamp];
     const notesCol = globalHeader[map.notes];
-    const returnMedicineCol = globalHeader[map.returnMedicine]; // 回程藥石欄位名稱
+    const returnMedicineCol = globalHeader[map.returnMedicine];
     
     // Sheet 1：結果
     const resultSheet = workbookOut.addWorksheet('結果');
@@ -394,7 +380,7 @@
       cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFCCCCCC'}};
       cell.font = {bold:true, color:{argb:'FF000000'}};
     });
-    activeRecords.forEach(obj => {
+    activeRecords.forEach((obj, index) => {
       const rowData = headers.map(col => obj.data[col]);
       let row = resultSheet.addRow(rowData);
       // 新新增 => 淡藍
@@ -403,13 +389,24 @@
           cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFCCE5FF'}};
         });
       } else {
-        // 已存在 => 只對有異動的欄位標黃
+        // 已存在 => 只對有異動的欄位標黃，排除申請單狀態與時間戳記
         row.eachCell((cell, colNum) => {
           let colName = headers[colNum-1];
-          if(obj.update[colName]){
+          if(obj.update[colName] && colName !== statusCol && colName !== timestampCol){
             cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFFFFF99'}};
           }
         });
+      }
+      // 最後一筆的時間戳記欄位標上淺藍色
+      if(index === activeRecords.length - 1){
+        const timestampColIndex = headers.indexOf(timestampCol) + 1;
+        if(timestampColIndex > 0){
+          row.getCell(timestampColIndex).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: {argb: 'FFCCE5FF'}
+          };
+        }
       }
       // 嘗試把所有欄位 parse 成日期
       row.eachCell((cell, colNum) => {
@@ -469,7 +466,6 @@
       returnMedicineCount[returnMedicine]++;
     });
     const returnMedicineSheet = workbookOut.addWorksheet('回程藥石統計');
-    // 根據填寫的內容去計算總人數與各選項的人數
     let returnMedicineHeader = returnMedicineSheet.addRow(['回程藥石', '人數']);
     returnMedicineHeader.eachCell(cell => {
       cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFCCCCCC'}};
@@ -491,9 +487,8 @@
     settingSheet.addRow(['申請單狀態', globalHeader[map.status]]);
     settingSheet.addRow(['時間戳記', globalHeader[map.timestamp]]);
     settingSheet.addRow(['備註說明', globalHeader[map.notes]]);
-    settingSheet.addRow(['回程藥石', globalHeader[map.returnMedicine]]); // 新增的回程藥石欄位
+    settingSheet.addRow(['回程藥石', globalHeader[map.returnMedicine]]);
 
-    
     // Sheet 4：當前處理完筆數
     const countSheet = workbookOut.addWorksheet('當前處理完筆數');
     countSheet.addRow(["筆數", finalProcessedCount]);
